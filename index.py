@@ -8,8 +8,10 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 import sys
 
+# Set default encoding to utf-8
 sys.stdout.reconfigure(encoding='utf-8')
 
+# Database setup
 Base = declarative_base()
 
 class Employee(Base):
@@ -27,11 +29,13 @@ class Publication(Base):
     pub_name = Column(Text)
     author = relationship('Employee', back_populates='publications')
 
+# Database connection
 DATABASE_URL = 'mysql+mysqlconnector://root:@localhost/dvlp'
 engine = create_engine(DATABASE_URL, echo=True)
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
+
 
 def scrape_data():
     base_url = 'https://pers.uz.zgora.pl'
@@ -78,10 +82,10 @@ def scrape_data():
         session.commit()
         employee_id = employee.id
 
-        # Print the employee info for debugging
+
         print(f"Added employee: {degree} {first_name} {last_name}, ID: {employee_id}")
 
-        # Use Selenium to navigate to the employee's publication page
+
         try:
             employee_link = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.PARTIAL_LINK_TEXT, last_name))
@@ -94,14 +98,13 @@ def scrape_data():
             )
             publication_link.click()
 
-            # Now we are on the next page; get its URL and analyze it for publications
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'table-striped')))
             next_page_url = driver.current_url
 
-            # Scrape publications using the publication URL
+
             scrape_employee_publications(employee_id, next_page_url, first_name, last_name)
 
-            # Go back to the main page to continue with the next employee
+            # Go back to the main page 
             driver.back()
             driver.back()
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'table')))  # Wait for the table to be present again
@@ -114,6 +117,7 @@ def scrape_data():
     driver.quit()
     session.commit()
 
+
 def scrape_employee_publications(employee_id, publication_url, first_name, last_name):
     response = requests.get(publication_url)
     response.encoding = 'utf-8'
@@ -125,8 +129,7 @@ def scrape_employee_publications(employee_id, publication_url, first_name, last_
         print("Publication table not found. Please check the HTML structure.")
         return
 
-    #for row in publication_table.find_all('tr')[1:]:  # Skip the header row
-    for row in publication_table.find_all('tr'):
+    for row in publication_table.find_all('tr')[1:]:  # Skip the header row
         cols = row.find_all('td')
         if len(cols) < 1:
             continue
